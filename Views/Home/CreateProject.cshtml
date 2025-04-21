@@ -1,0 +1,184 @@
+@model TaskTrackerDemo.Dtos.ProjectCreateDto
+@{
+    ViewData["Title"] = "Create Project";
+}
+
+<div class="container-fluid px-4">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex align-items-center justify-content-between">
+            <h4 class="m-0 font-weight-bold text-primary">
+                <i class="fas fa-plus-circle me-2"></i>New Project
+            </h4>
+        </div>
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <form asp-action="CreateProject" method="post" class="needs-validation" novalidate>
+                @Html.AntiForgeryToken()
+                
+                <!-- Project Name -->
+                <div class="form-group mb-4">
+                    <label class="font-weight-bold text-primary">Project Name</label>
+                    <input type="text" class="form-control form-control-lg border-primary" 
+                           asp-for="Name" required>
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <!-- Tasks Section -->
+                <div class="card border-primary mb-4">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-primary">
+                            <i class="fas fa-tasks me-2"></i>Project Tasks
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-success" id="addTask">
+                            <i class="fas fa-plus me-2"></i>Add Task
+                        </button>
+                    </div>
+                    <div class="card-body" id="tasksContainer">
+                        <!-- Tasks will be added here dynamically -->
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex gap-2 justify-content-end">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="fas fa-save me-2"></i>Create Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Task Template (Outside the form) -->
+<div id="taskTemplate" class="d-none">
+    <div class="card task-card mb-3">
+        <div class="card-header bg-white d-flex justify-content-between">
+            <h6 class="mb-0">Task <span class="task-number"></span></h6>
+            <button type="button" class="btn btn-sm btn-danger remove-task">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Task Title -->
+                <div class="col-md-12">
+                    <input type="text" class="form-control" 
+                           name="Tasks[INDEX].Title" 
+                           placeholder="Task description" 
+                           required>
+                    <span class="text-danger field-validation-valid" 
+                          data-valmsg-for="Tasks[INDEX].Title" 
+                          data-valmsg-replace="true"></span>
+                </div>
+
+                <!-- Due Date, Weightage, AssignedTo -->
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <input type="date" class="form-control"
+                               name="Tasks[INDEX].DueDate"
+                               required
+                               min="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        <span class="text-danger field-validation-valid"
+                              data-valmsg-for="Tasks[INDEX].DueDate"
+                              data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" class="form-control"
+                               name="Tasks[INDEX].Weightage"
+                               required
+                               min="1" max="100"
+                               value="50"
+                               placeholder="Weight (1-100)">
+                        <span class="text-danger field-validation-valid"
+                              data-valmsg-for="Tasks[INDEX].Weightage"
+                              data-valmsg-replace="true"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select"
+                                name="Tasks[INDEX].AssignedToId"
+                                required>
+                            <option value="">Select Assignee</option>
+                            @foreach (var member in ViewBag.TeamMembers)
+                            {
+                                <option value="@member.Id">@member.FullName</option>
+                            }
+                        </select>
+                        <span class="text-danger field-validation-valid"
+                              data-valmsg-for="Tasks[INDEX].AssignedToId"
+                              data-valmsg-replace="true"></span>
+                    </div>
+                </div>
+            </div>
+            <!-- Hidden AssigneeId field -->
+            <input type="hidden" name="Tasks[INDEX].AssigneeId" value="@ViewBag.CurrentUserId" />
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Store template HTML
+            const taskTemplate = $('#taskTemplate').html();
+            
+            // Add first task automatically
+            addTask();
+
+            // Add Task Button
+            $('#addTask').click(addTask);
+
+            function addTask() {
+                const taskCount = $('#tasksContainer .task-card').length;
+                const newTaskHtml = taskTemplate.replace(/INDEX/g, taskCount);
+                const $newTask = $(newTaskHtml);
+                
+                // Update displayed task number
+                $newTask.find('.task-number').text(taskCount + 1);
+                
+                // Add to container
+                $('#tasksContainer').append($newTask);
+                
+                // Initialize validation for new elements
+                $.validator.unobtrusive.parse($newTask);
+            }
+
+            // Remove Task
+            $(document).on('click', '.remove-task', function() {
+                if ($('#tasksContainer .task-card').length > 1) {
+                    $(this).closest('.task-card').remove();
+                    resequenceTasks();
+                } else {
+                    alert("At least one task is required.");
+                }
+            });
+
+            function resequenceTasks() {
+                $('#tasksContainer .task-card').each(function(index) {
+                    const $task = $(this);
+                    
+                    // Update displayed number
+                    $task.find('.task-number').text(index + 1);
+                    
+                    // Update all field names and validation attributes
+                    $task.find('[name], [data-valmsg-for]').each(function() {
+                        const $el = $(this);
+                        if ($el.attr('name')) {
+                            $el.attr('name', $el.attr('name').replace(/Tasks\[\d+\]/, `Tasks[${index}]`));
+                        }
+                        if ($el.attr('data-valmsg-for')) {
+                            $el.attr('data-valmsg-for', $el.attr('data-valmsg-for').replace(/Tasks\[\d+\]/, `Tasks[${index}]`));
+                        }
+                    });
+                });
+                
+                // Revalidate form
+                $('form').removeData('validator');
+                $('form').removeData('unobtrusiveValidation');
+                $.validator.unobtrusive.parse('form');
+            }
+        });
+    </script>
+}

@@ -1,0 +1,159 @@
+@model TaskTrackerDemo.Models.MyTeamViewModel
+@{
+    ViewData["Title"] = "My Team";
+}
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Manage My Team</h2>
+
+    <form method="post" asp-action="AddToTeam">
+        <div class="row align-items-start">
+            @Html.AntiForgeryToken()
+
+            <!-- Available Users -->
+            <div class="col-md-5">
+                <h4 class="text-primary">Available Users</h4>
+                <input type="text" class="form-control mb-2" id="searchAvailable" placeholder="Search available users..." />
+                <div class="border p-3 rounded bg-light scrollable-card" id="availableUsersContainer">
+                    @if (Model.AvailableUsers.Any())
+                    {
+                        @foreach (var user in Model.AvailableUsers)
+                        {
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox"
+                                       name="selectedUserIds" value="@user.Id" id="user-@user.Id" />
+                                <label class="form-check-label" for="user-@user.Id">
+                                    @user.FullName (@user.Email)
+                                </label>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted">No users found.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Middle Column with Buttons -->
+            <div class="col-md-2 d-flex justify-content-center align-items-center flex-column">
+                <button type="button" id="btnAddToTeam" class="btn btn-success shadow-sm mb-2">
+                    <i class="fas fa-arrow-right me-1"></i> Add to Team
+                </button>
+                <form asp-action="RemoveSelectedFromTeam" method="post" id="removeForm">
+                    <input type="hidden" name="teamMemberIds" id="selectedTeamMembers" />
+                    <button type="button" id="btnRemoveFromTeam" class="btn btn-danger shadow-sm">
+                        <i class="fas fa-arrow-left me-1"></i> Remove from Team
+                    </button>
+                </form>
+            </div>
+
+            <!-- My Team -->
+            <div class="col-md-5">
+                <h4 class="text-primary">My Team</h4>
+                <input type="text" class="form-control mb-2" id="searchMyTeam" placeholder="Search my team..." />
+                <div class="border p-3 rounded bg-white shadow-sm scrollable-card" id="myTeamContainer">
+                    @if (Model.MyTeamMembers.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var member in Model.MyTeamMembers)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <input class="form-check-input me-2" type="checkbox"
+                                            name="teamMemberIds" value="@member.Id" id="teamMember-@member.Id" />
+                                        <label class="form-check-label" for="teamMember-@member.Id">
+                                            @member.FullName (@member.Email)
+                                        </label>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p>No team members yet.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .scrollable-card {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+
+@section Scripts {
+<script>
+    document.getElementById("btnAddToTeam").addEventListener("click", function () {
+        const selectedIds = [];
+        document.querySelectorAll("input[name='selectedUserIds']:checked").forEach(cb => {
+            selectedIds.push(cb.value);
+        });
+
+        if (selectedIds.length === 0) {
+            alert("Please select at least one user.");
+            return;
+        }
+
+        fetch('/Team/AddToTeam', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
+            body: JSON.stringify(selectedIds)
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload(); // Optional: reload the page to reflect changes or dynamically update DOM
+            } else {
+                return response.text().then(msg => alert(msg));
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("An error occurred while adding users to your team.");
+        });
+    });
+</script>
+
+<script>
+    document.getElementById("btnRemoveFromTeam").addEventListener("click", function () {
+        const selectedIds = [];
+        document.querySelectorAll("input[name='teamMemberIds']:checked").forEach(cb => {
+            selectedIds.push(cb.value);
+        });
+
+        if (selectedIds.length === 0) {
+            alert("Please select at least one user to remove.");
+            return;
+        }
+
+        fetch('/Team/RemoveFromTeam', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
+            body: JSON.stringify(selectedIds)
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload(); // Optional: or dynamically update UI
+            } else {
+                return response.text().then(msg => alert(msg));
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("An error occurred while removing users from your team.");
+        });
+    });
+</script>
+
+}

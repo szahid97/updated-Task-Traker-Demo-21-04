@@ -1,0 +1,346 @@
+@model TaskTrackerDemo.Models.Project
+@{
+    ViewData["Title"] = "Project Details";
+}
+
+<div class="container-fluid px-4">
+    <div class="card shadow mb-4">
+        <!-- Project Header -->
+        <div class="card-header py-3 d-flex justify-content-between align-items-center bg-primary text-white">
+            <h4 class="m-0 font-weight-bold">
+                <i class="fas fa-project-diagram me-2"></i>@Model.Name
+            </h4>
+            <span class="badge bg-light text-dark fs-6">
+                <i class="fas fa-percentage me-1"></i>
+                @GetCompletionPercentage(Model)% Complete
+            </span>
+        </div>
+        
+        <div class="card-body">
+            <!-- Project Meta -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card border-left-primary h-100">
+                        <div class="card-body">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Project Info
+                            </h6>
+                            <div class="project-meta">
+                                <p class="mb-2">
+                                    <i class="fas fa-user me-2 text-muted"></i>
+                                    <strong>Created By:</strong> @Model.CreatedBy
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-calendar-alt me-2 text-muted"></i>
+                                    <strong>Start Date:</strong> @DateTime.Today.ToString("dd MMM yyyy")
+                                </p>
+                                <p class="mb-0">
+                                    <i class="fas fa-flag me-2 text-muted"></i>
+                                    <strong>Status:</strong> 
+                                    <span class="badge bg-@(GetCompletionPercentage(Model) == 100 ? "success" : "warning")">
+                                        @(GetCompletionPercentage(Model) == 100 ? "Completed" : "In Progress")
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Chart -->
+                <div class="col-md-8">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-chart-line me-2"></i>Progress
+                            </h6>
+                            <div class="progress mb-3" style="height: 25px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" 
+                                     style="width: @GetCompletionPercentage(Model)%">
+                                    @GetCompletionPercentage(Model)%
+                                </div>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-4 border-end">
+                                    <h5 class="mb-0">@Model.Tasks.Count</h5>
+                                    <small class="text-muted">Total Tasks</small>
+                                </div>
+                                <div class="col-4 border-end">
+                                    <h5 class="mb-0">@Model.Tasks.Count(t => t.Status == "Completed")</h5>
+                                    <small class="text-muted">Completed</small>
+                                </div>
+                                <div class="col-4">
+                                    <h5 class="mb-0">@Model.Tasks.Count(t => t.Status != "Completed")</h5>
+                                    <small class="text-muted">Remaining</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Section -->
+            <div class="card mb-4 border-top-primary project-task-card">
+                <div class="card-header py-3 bg-white">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-tasks me-2"></i>Project Tasks
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Task</th>
+                                    <th>Assigned To</th>
+                                    <th>Due Date</th>
+                                    <th>Weightage</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var task in Model.Tasks)
+                                {
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-tasks me-2 text-primary"></i>
+                                            @task.Title
+                                        </td>
+                                        <td>@task.AssignedToId</td>
+                                        <td>@task.DueDate.ToString("dd MMM yyyy")</td>
+                                        <td>
+                                            <span class="badge bg-info">
+                                                @task.Weightage%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-@GetStatusColor(task.Status)">
+                                                @task.Status
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" 
+                                                        type="button" id="taskActions-@task.Id" 
+                                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <i class="fas fa-cog"></i> Actions
+                                                </button>
+                                                <ul class="dropdown-menu" aria-labelledby="taskActions-@task.Id">
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                                        data-bs-target="#editTaskModal-@task.Id">
+                                                            <i class="fas fa-edit me-2"></i>Edit Task
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteTaskModal-@task.Id">
+                                                            <i class="fas fa-trash me-2"></i>Delete Task
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" 
+                                                        data-bs-target="#reassignTaskModal-@task.Id">
+                                                            <i class="fas fa-user-friends me-2"></i>Reassign Task
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+
+                                            <!-- Edit Task Modal -->
+                                            <div class="modal fade" id="editTaskModal-@task.Id" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Edit Task</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <form asp-controller="ProjectDetails" asp-action="EditTask" method="post">
+                                                            <input type="hidden" name="taskId" value="@task.Id" />
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Task Name</label>
+                                                                    <input type="text" class="form-control" name="title" value="@task.Title" required>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Due Date</label>
+                                                                    <input type="date" class="form-control" name="dueDate" 
+                                                                        value="@task.DueDate.ToString("yyyy-MM-dd")" required>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Delete Task Modal -->
+                                            <div class="modal fade" id="deleteTaskModal-@task.Id" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <form asp-controller="ProjectDetails" asp-action="DeleteTask" method="post">
+                                                            <input type="hidden" name="taskId" value="@task.Id" />
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Confirm Delete</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p>Are you sure you want to delete the task "@task.Title"?</p>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Reassign Task Modal -->
+                                            <div class="modal fade" id="reassignTaskModal-@task.Id" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <form asp-controller="ProjectDetails" asp-action="ReassignTask" method="post">
+                                                            <input type="hidden" name="taskId" value="@task.Id" />
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Reassign Task</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="mb-3">
+                                                                    <label class="form-label">Assign To</label>
+                                                                    <select class="form-select" name="assignedToId" required>
+                                                                        @if (ViewBag.TeamMembers != null && ViewBag.TeamMembers.Count > 0)
+                                                                            {
+                                                                                foreach (var member in ViewBag.TeamMembers)
+                                                                                {
+                                                                                    <option value="@member.Id" selected="@(member.Id == task.AssignedToId)">
+                                                                                        @member.FullName
+                                                                                    </option>
+                                                                                }
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                <option value="">No team members available</option>
+                                                                            }
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-primary">Reassign</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Discussion Section -->
+            <div class="card border-top-primary">
+                <div class="card-header py-3 bg-white">
+                    <h5 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-comments me-2"></i>Discussion
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="discussion-feed mb-4">
+                        @foreach (var msg in Model.Discussions)
+                        {
+                            <div class="d-flex mb-3">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar bg-primary text-white rounded-circle p-2">
+                                        @msg.User.Substring(0, 1)
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="card">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between">
+                                                <h6 class="mb-1">@msg.User</h6>
+                                                <small class="text-muted">@msg.Timestamp.ToString("g")</small>
+                                            </div>
+                                            <p class="mb-0">@msg.Message</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <form asp-action="AddDiscussion" method="post" class="mt-4">
+                        <input type="hidden" name="projectId" value="@Model.Id" />
+                        <div class="input-group">
+                            <textarea name="message" class="form-control" 
+                                    placeholder="Type your message..." required rows="3"></textarea>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>Send
+                            </button>
+                        </div>
+                        @Html.AntiForgeryToken()
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize modals properly
+            $('.modal').on('show.bs.modal', function (e) {
+                // Disable scroll on the task card when modal is open
+                $('.project-task-card .card-body').css('overflow', 'hidden');
+                $('body').addClass('modal-open');
+            }).on('hidden.bs.modal', function (e) {
+                // Enable scroll on the task card when modal is closed
+                $('.project-task-card .card-body').css('overflow', 'auto');
+                $('body').removeClass('modal-open');
+                // Ensure to remove backdrop only if modal is hidden
+                if (!$('.modal').hasClass('show')) {
+                    $('.modal-backdrop').remove();
+                }
+            });
+
+            // Prevent default form submission for testing
+            $('form').on('submit', function(e) {
+                e.preventDefault();
+                // For testing - remove this after verification
+                console.log("Form would submit now");
+                $(this).closest('.modal').modal('hide');
+                return false;
+            });
+        });
+    </script>
+}
+
+
+
+
+@functions {
+    int GetCompletionPercentage(Project project) {
+        if (project.Tasks.Count == 0) return 0;
+        var completed = project.Tasks.Count(t => t.Status == "Completed");
+        return (int)((completed / (double)project.Tasks.Count) * 100);
+    }
+
+    string GetStatusColor(string status) => status switch
+    {
+        "Completed" => "success",
+        "In Progress" => "warning",
+        _ => "secondary"
+    };
+
+}

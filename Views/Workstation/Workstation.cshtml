@@ -1,0 +1,105 @@
+@model List<Project>
+@{
+    ViewData["Title"] = "Workstation";
+}
+
+<div class="container-fluid px-4">
+    <div class="card shadow border-0 mb-4">
+        <div class="card-header bg-primary text-white py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-laptop-code me-2"></i>
+                <span class="h5 m-0">My Workstation</span>
+            </div>
+            <span class="badge bg-white text-primary">
+                <i class="fas fa-project-diagram me-1"></i> Projects: @Model.Count
+            </span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                @foreach (var project in Model)
+                {
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        <div class="card h-100 border-0 shadow-sm hover-effect">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center py-3">
+                                <h6 class="m-0 text-truncate">@project.Name</h6>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-link text-muted p-0" 
+                                            type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-end shadow-sm">
+                                        <a class="dropdown-item" asp-controller="Projects" asp-action="EditProject" asp-route-id="@project.Id">
+                                            <i class="fas fa-edit me-2"></i>Edit
+                                        </a>
+                                        <a class="dropdown-item" asp-controller="Projects" asp-action="Discussions" asp-route-projectId="@project.Id">
+                                            <i class="fas fa-comments me-2"></i>Discussion
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <!-- Progress Bar -->
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span>Progress</span>
+                                        <span class="fw-bold">@GetCompletionPercentage(project)%</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" 
+                                             style="width: @GetCompletionPercentage(project)%"
+                                             role="progressbar">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Project Metrics -->
+                                <div class="d-flex justify-content-between small mb-2">
+                                    <span class="text-muted">Tasks:</span>
+                                    <span class="fw-bold">@project.TaskCount</span>
+                                </div>
+                                <div class="d-flex justify-content-between small mb-2">
+                                    <span class="text-muted">Created By:</span>
+                                    <span class="fw-bold text-truncate" style="max-width: 120px;">@project.CreatedBy</span>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span class="text-muted">Due Date:</span>
+                                    <span class="fw-bold">
+                                        @project.DueDate.ToString("dd MMM yyyy")
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-transparent border-0 pt-0">
+                                <a href="@Url.Action("ProjectDetails", "ProjectDetails", new { id = project.Id })"
+                                   class="btn btn-outline-primary btn-sm w-100 py-2">
+                                    <i class="fas fa-arrow-right me-2"></i>View Project
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-effect:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.3s ease;
+    }
+    .text-truncate {
+        max-width: 280px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
+
+@functions {
+    int GetCompletionPercentage(Project project) {
+        if (project.TaskCount == 0) return 0;
+        var completed = project.Tasks.Count(t => t.Status == "Completed");
+        return (int)((completed / (double)project.TaskCount) * 100);
+    }
+}
